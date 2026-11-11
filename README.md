@@ -1,58 +1,27 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# POS Kopi Kita
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi POS Laravel untuk menyimpan transaksi, mencetak struk dari backend, dan menerima pembayaran Midtrans.
 
-## About Laravel
+## Menjalankan aplikasi
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+1. Jalankan `composer install`.
+2. Salin `.env.example` menjadi `.env`, lalu isi `APP_KEY` (jalankan `php artisan key:generate`).
+3. Jalankan migrasi dengan `php artisan migrate`.
+4. Jalankan aplikasi dengan `php artisan serve`, lalu buka URL yang ditampilkan Artisan.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Menu contoh dan harganya berada di `config/pos.php`. Total pembayaran dihitung server dari katalog tersebut; harga tidak diambil dari browser.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Struk
 
-## Learning Laravel
+Default `RECEIPT_DRIVER=pdf` membuat struk PDF di backend (tanpa mencetak dari browser), tersimpan pada `storage/app/private/receipts`. Endpoint struk transaksi juga tersedia pada tautan Unduh struk PDF.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Untuk printer thermal, set `RECEIPT_DRIVER=escpos` dan:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Windows: set `RECEIPT_CONNECTOR=windows` serta `RECEIPT_PRINTER_NAME` sesuai nama printer di Windows.
+- Simulasi file ESC/POS: set `RECEIPT_CONNECTOR=file`; data mentah printer ditulis di folder struk.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Pastikan proses PHP dapat mengakses printer yang dipilih. Transaksi kasir tetap disimpan jika pencetakan gagal, dan kegagalan dilaporkan sebagai error.
 
-## Agentic Development
+## Midtrans Sandbox
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Isi `MIDTRANS_SERVER_KEY` dan `MIDTRANS_CLIENT_KEY` dengan kunci Sandbox. Nilai production default-nya `false`; aktifkan `MIDTRANS_IS_PRODUCTION=true` hanya saat menggunakan kredensial Production. Arahkan URL notifikasi Midtrans ke `/midtrans/notification`. Status order dan pencetakan struk pembayaran online diperbarui dari notifikasi yang signature dan nominalnya diverifikasi.
