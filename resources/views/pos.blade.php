@@ -89,6 +89,7 @@
         const cart = new Map();
         const formatter = new Intl.NumberFormat('id-ID');
         const message = document.getElementById('message');
+        let isSubmitting = false;
 
         function rupiah(value) {
             return `Rp${formatter.format(value)}`;
@@ -103,10 +104,31 @@
                 element.textContent = 'Belum ada item.';
             } else {
                 element.className = '';
-                element.innerHTML = items.map(([id, quantity]) => {
+                element.replaceChildren(...items.map(([id, quantity]) => {
                     const product = products[id];
-                    return `<div class="cart-row"><div>${product.name}<small>${quantity} x ${rupiah(product.price)}</small></div><strong>${rupiah(product.price * quantity)}</strong><button class="remove" type="button" data-remove="${id}" aria-label="Hapus ${product.name}">Hapus</button></div>`;
-                }).join('');
+                    const row = document.createElement('div');
+                    row.className = 'cart-row';
+                    const details = document.createElement('div');
+                    const name = document.createElement('span');
+                    name.textContent = product.name;
+                    const summary = document.createElement('small');
+                    summary.textContent = `${quantity} x ${rupiah(product.price)}`;
+                    details.append(name, summary);
+
+                    const lineTotal = document.createElement('strong');
+                    lineTotal.textContent = rupiah(product.price * quantity);
+
+                    const removeButton = document.createElement('button');
+                    removeButton.className = 'remove';
+                    removeButton.type = 'button';
+                    removeButton.dataset.remove = id;
+                    removeButton.setAttribute('aria-label', `Hapus ${product.name}`);
+                    removeButton.textContent = 'Hapus';
+
+                    row.append(details, lineTotal, removeButton);
+
+                    return row;
+                }));
             }
 
             const subtotal = items.reduce((sum, [id, quantity]) => sum + products[id].price * quantity, 0);
@@ -114,15 +136,41 @@
             document.getElementById('subtotal').textContent = rupiah(subtotal);
             document.getElementById('discount-total').textContent = rupiah(discount);
             document.getElementById('total').textContent = rupiah(subtotal - discount);
-            document.getElementById('cash').disabled = items.length === 0;
+            document.getElementById('cash').disabled = isSubmitting || items.length === 0;
             const online = document.getElementById('online');
-            if (online) online.disabled = items.length === 0;
+            if (online) online.disabled = isSubmitting || items.length === 0;
+            document.querySelectorAll('[data-product]').forEach((button) => {
+                button.disabled = isSubmitting;
+            });
+            document.getElementById('discount').disabled = isSubmitting;
+            document.getElementById('customer-name').disabled = isSubmitting;
+            document.getElementById('customer-email').disabled = isSubmitting;
+            element.querySelectorAll('[data-remove]').forEach((button) => {
+                button.disabled = isSubmitting;
+            });
+        }
+
+        function finishPayment(text, { isError = false, clearOrder = false } = {}) {
+            if (clearOrder) {
+                cart.clear();
+                document.getElementById('discount').value = 0;
+            }
+
+            isSubmitting = false;
+            message.className = isError ? 'error' : '';
+            message.textContent = text;
+            renderCart();
         }
 
         async function sendOrder(url, online = false) {
-            if (cart.size === 0) return;
+            if (isSubmitting || cart.size === 0) return;
+
+            isSubmitting = true;
+            renderCart();
             message.className = '';
             message.textContent = 'Memproses transaksi...';
+            let paymentModalOpen = false;
+            let paymentFinished = false;
 
             const payload = {
                 items: [...cart.entries()].map(([product_id, quantity]) => ({ product_id, quantity })),
@@ -151,22 +199,48 @@
                 }
 
                 if (online) {
+                    paymentModalOpen = true;
                     window.snap.pay(data.snap_token, {
-                        onSuccess: () => { message.textContent = `Pembayaran ${data.order_id} berhasil. Status akhir dikonfirmasi oleh Midtrans.`; },
-                        onPending: () => { message.textContent = `Pembayaran ${data.order_id} menunggu konfirmasi.`; },
-                        onError: () => { message.className = 'error'; message.textContent = 'Pembayaran gagal. Coba kembali.'; },
-                        onClose: () => { message.textContent = `Pembayaran ${data.order_id} belum diselesaikan.`; },
+                        onSuccess: () => {
+                            if (paymentFinished) return;
+                            paymentFinished = true;
+                            finishPayment(`Pembayaran ${data.order_id} berhasil. Status akhir dikonfirmasi oleh Midtrans.`, { clearOrder: true });
+                        },
+                        onPending: () => {
+                            if (paymentFinished) return;
+                            paymentFinished = true;
+                            finishPayment(`Pembayaran ${data.order_id} menunggu konfirmasi.`, { clearOrder: true });
+                        },
+                        onError: () => {
+                            if (paymentFinished) return;
+                            paymentFinished = true;
+                            finishPayment('Pembayaran gagal. Coba kembali.', { isError: true });
+                        },
+                        onClose: () => {
+                            if (paymentFinished) return;
+                            paymentFinished = true;
+                            finishPayment(`Pembayaran ${data.order_id} belum diselesaikan.`);
+                        },
                     });
                     return;
                 }
 
-                message.innerHTML = `Transaksi ${data.order_id} tersimpan. <a href="${data.receipt_url}">Unduh struk PDF</a>`;
+                message.replaceChildren(document.createTextNode(`Transaksi ${data.order_id} tersimpan. `));
+                const receiptLink = document.createElement('a');
+                receiptLink.href = data.receipt_url;
+                receiptLink.textContent = 'Unduh struk PDF';
+                message.append(receiptLink);
                 cart.clear();
                 document.getElementById('discount').value = 0;
-                renderCart();
             } catch (error) {
+                paymentModalOpen = false;
                 message.className = 'error';
                 message.textContent = error.message;
+            } finally {
+                if (!paymentModalOpen) {
+                    isSubmitting = false;
+                    renderCart();
+                }
             }
         }
 
