@@ -4,7 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $order_id
+ * @property string $product_id
+ * @property string $product_name
+ * @property int $quantity
+ * @property int $unit_price
+ * @property int $line_total
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 class OrderItem extends Model
 {
     protected $fillable = [

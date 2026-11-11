@@ -56,7 +56,7 @@ class ReceiptPrinter
 
             foreach ($order->items as $item) {
                 $printer->text($item->product_name."\n");
-                $printer->text(sprintf(
+                $printer->text(\sprintf(
                     '%d x Rp%s  Rp%s'."\n",
                     $item->quantity,
                     number_format($item->unit_price, 0, ',', '.'),
@@ -81,7 +81,7 @@ class ReceiptPrinter
     public function pdfContents(Order $order): string
     {
         $order->loadMissing('items');
-        $height = max(240, 190 + ($order->items->count() * 36));
+        $height = max(240, 190 + $order->items->count() * 36);
 
         return Pdf::loadView('receipts.pdf', ['order' => $order])
             ->setPaper([0, 0, 226.77, $height])

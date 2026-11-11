@@ -78,18 +78,18 @@ class MidtransController extends Controller
 
         if (
             $transactionStatus === 'settlement'
-            || ($transactionStatus === 'capture' && ($notification['fraud_status'] ?? null) === 'accept')
+            || $transactionStatus === 'capture' && ($notification['fraud_status'] ?? null) === 'accept'
         ) {
             $order->status = 'paid';
             $shouldPrintReceipt = $order->receipt_printed_at === null;
         } elseif ($transactionStatus === 'pending' && $order->status !== 'paid') {
             $order->status = 'pending';
         } elseif (
-            in_array($transactionStatus, ['deny', 'expire', 'cancel'], true)
+            \in_array($transactionStatus, ['deny', 'expire', 'cancel'], true)
             && $order->status !== 'paid'
         ) {
             $order->status = 'failed';
-        } elseif (in_array($transactionStatus, ['refund', 'partial_refund'], true)) {
+        } elseif (\in_array($transactionStatus, ['refund', 'partial_refund'], true)) {
             $order->status = 'refunded';
         }
 
