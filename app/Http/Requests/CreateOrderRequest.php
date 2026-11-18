@@ -16,7 +16,7 @@ class CreateOrderRequest extends FormRequest
     {
         return [
             'items' => ['required', 'array', 'min:1', 'max:20'],
-            'items.*.product_id' => ['required', 'string', Rule::in(array_keys(config('pos.products')))],
+            'items.*.product_id' => ['required', 'string', Rule::exists('products', 'slug')],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'discount' => ['nullable', 'integer', 'min:0'],
         ];

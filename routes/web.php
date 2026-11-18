@@ -3,11 +3,21 @@
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\ReceiptController;
+use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('pos', [
-        'products' => config('pos.products'),
+        'products' => Product::query()
+            ->orderBy('name')
+            ->get()
+            ->mapWithKeys(fn (Product $product): array => [
+                $product->slug => [
+                    'name' => $product->name,
+                    'price' => $product->price,
+                ],
+            ])
+            ->all(),
         'storeName' => config('pos.store_name'),
     ]);
 })->name('pos');

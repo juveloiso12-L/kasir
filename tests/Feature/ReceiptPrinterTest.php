@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Product;
 use App\Services\OrderService;
 use App\Services\ReceiptPrinter;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -16,8 +17,11 @@ class ReceiptPrinterTest extends TestCase
     {
         Storage::fake('local');
         config(['pos.receipt.driver' => 'pdf']);
+        $product = Product::factory()->create([
+            'slug' => 'roti-bakar',
+        ]);
         $order = app(OrderService::class)->create(
-            [['product_id' => 'roti-bakar', 'quantity' => 1]],
+            [['product_id' => $product->slug, 'quantity' => 1]],
             2000,
             'cash',
             'paid',

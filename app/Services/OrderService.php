@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -14,9 +15,19 @@ class OrderService
      */
     public function create(array $items, int $discount, string $paymentMethod, string $status): Order
     {
-        $products = config('pos.products');
+        $productSlugs = collect($items)->pluck('product_id');
+        $products = Product::query()->whereIn('slug', $productSlugs)->get()->keyBy('slug');
+
+        foreach ($productSlugs->unique() as $productSlug) {
+            if (! $products->has($productSlug)) {
+                throw ValidationException::withMessages([
+                    'items' => 'Satu atau lebih produk tidak tersedia.',
+                ]);
+            }
+        }
+
         $subtotal = collect($items)->sum(
-            fn (array $item): int => $products[$item['product_id']]['price'] * $item['quantity'],
+            fn (array $item): int => $products[$item['product_id']]->price * $item['quantity'],
         );
 
         if ($discount > $subtotal) {
@@ -38,11 +49,11 @@ class OrderService
             foreach ($items as $item) {
                 $product = $products[$item['product_id']];
                 $order->items()->create([
-                    'product_id' => $item['product_id'],
-                    'product_name' => $product['name'],
+                    'product_id' => $product->slug,
+                    'product_name' => $product->name,
                     'quantity' => $item['quantity'],
-                    'unit_price' => $product['price'],
-                    'line_total' => $product['price'] * $item['quantity'],
+                    'unit_price' => $product->price,
+                    'line_total' => $product->price * $item['quantity'],
                 ]);
             }
 

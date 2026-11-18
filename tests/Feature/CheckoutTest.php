@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Order;
+use App\Models\Product;
 use App\Services\ReceiptPrinter;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Mockery\MockInterface;
@@ -14,6 +15,12 @@ class CheckoutTest extends TestCase
 
     public function test_cash_checkout_saves_order_and_prints_receipt(): void
     {
+        Product::factory()->create([
+            'slug' => 'kopi-susu',
+            'name' => 'Kopi Susu',
+            'price' => 18000,
+        ]);
+
         $this->mock(ReceiptPrinter::class, function (MockInterface $mock): void {
             $mock->shouldReceive('print')->once();
         });
@@ -60,6 +67,11 @@ class CheckoutTest extends TestCase
 
     public function test_discount_cannot_exceed_subtotal(): void
     {
+        Product::factory()->create([
+            'slug' => 'americano',
+            'price' => 15000,
+        ]);
+
         $response = $this->postJson(route('checkout.store'), [
             'items' => [
                 ['product_id' => 'americano', 'quantity' => 1],
@@ -70,5 +82,19 @@ class CheckoutTest extends TestCase
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['discount']);
         $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_pos_displays_products_from_the_database_catalog(): void
+    {
+        Product::factory()->create([
+            'slug' => 'kopi-manual',
+            'name' => 'Kopi Manual',
+            'price' => 23500,
+        ]);
+
+        $this->get(route('pos'))
+            ->assertOk()
+            ->assertSee('Kopi Manual')
+            ->assertSee('Rp23.500');
     }
 }

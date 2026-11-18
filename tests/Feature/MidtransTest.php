@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Order;
+use App\Models\Product;
 use App\Services\MidtransPayment;
 use App\Services\OrderService;
 use App\Services\ReceiptPrinter;
@@ -16,6 +17,10 @@ class MidtransTest extends TestCase
 
     public function test_checkout_creates_pending_order_and_returns_snap_token(): void
     {
+        Product::factory()->create([
+            'slug' => 'americano',
+            'price' => 15000,
+        ]);
         config([
             'midtrans.server_key' => 'sandbox-server-key',
             'midtrans.client_key' => 'sandbox-client-key',
@@ -45,6 +50,10 @@ class MidtransTest extends TestCase
 
     public function test_checkout_requires_midtrans_server_key(): void
     {
+        Product::factory()->create([
+            'slug' => 'americano',
+            'price' => 15000,
+        ]);
         config([
             'midtrans.server_key' => null,
             'midtrans.client_key' => null,
@@ -65,8 +74,12 @@ class MidtransTest extends TestCase
     public function test_notification_rejects_an_invalid_signature(): void
     {
         config(['midtrans.server_key' => 'sandbox-server-key']);
+        $product = Product::factory()->create([
+            'slug' => 'americano',
+            'price' => 15000,
+        ]);
         $order = app(OrderService::class)->create(
-            [['product_id' => 'americano', 'quantity' => 1]],
+            [['product_id' => $product->slug, 'quantity' => 1]],
             0,
             'midtrans',
             'pending',
@@ -91,8 +104,12 @@ class MidtransTest extends TestCase
     {
         $serverKey = 'sandbox-server-key';
         config(['midtrans.server_key' => $serverKey]);
+        $product = Product::factory()->create([
+            'slug' => 'americano',
+            'price' => 15000,
+        ]);
         $order = app(OrderService::class)->create(
-            [['product_id' => 'americano', 'quantity' => 1]],
+            [['product_id' => $product->slug, 'quantity' => 1]],
             0,
             'midtrans',
             'pending',

@@ -9,7 +9,9 @@ Aplikasi POS Laravel untuk menyimpan transaksi, mencetak struk dari backend, dan
 3. Jalankan migrasi dengan `php artisan migrate`.
 4. Jalankan aplikasi dengan `php artisan serve`, lalu buka URL yang ditampilkan Artisan.
 
-Menu contoh dan harganya berada di `config/pos.php`. Total pembayaran dihitung server dari katalog tersebut; harga tidak diambil dari browser.
+Menu awal dan harganya disalin dari `config/pos.php` ke katalog database melalui `ProductCatalogSeeder`. Jalankan `php artisan db:seed --class=ProductCatalogSeeder` setelah migrasi untuk mengisi menu awal. Setelah itu, kategori dan produk dikelola melalui panel Filament di `/admin`, dan perubahan produk akan tampil pada POS. Harga transaksi selalu dihitung server dari katalog database; harga tidak diambil dari browser. Detail nama dan harga produk tetap disimpan sebagai snapshot pada transaksi.
+
+Untuk membuat akun administrator panel, jalankan `php artisan make:filament-user` dan ikuti prompt lokal. Akun baru belum mendapat akses admin secara otomatis. Setelah migrasi `is_admin` diterapkan, operator tepercaya dapat memberikan akses dengan `php artisan app:grant-filament-admin email@contoh.com`. User biasa tetap tidak dapat membuka `/admin`.
 
 ## Struk
 
